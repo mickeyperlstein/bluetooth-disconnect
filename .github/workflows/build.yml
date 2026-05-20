@@ -1,0 +1,45 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # Installs Gradle 8.4 and exposes the `gradle` command.
+      # We use `gradle` directly — no gradle-wrapper.jar needed.
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
+
+      # ubuntu-latest ships Android SDK at /usr/local/lib/android/sdk.
+      # Accept licences and make sure SDK 34 + matching build-tools are present.
+      - name: Accept Android SDK licences and install platform
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+
+      - name: Build debug APK
+        run: gradle :app:assembleDebug
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: dont-leave-me-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
