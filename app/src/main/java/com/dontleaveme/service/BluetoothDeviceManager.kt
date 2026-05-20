@@ -3,20 +3,10 @@ package com.dontleaveme.service
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.content.Context
-import android.content.SharedPreferences
 
 class BluetoothDeviceManager(private val context: Context) {
 
-    companion object {
-        private const val PREFS_NAME = "dontleaveme_prefs"
-        private const val KEY_WATCHED = "watched_devices"
-        private const val KEY_GRACE_MS = "grace_period_ms"
-        private const val KEY_AUTO_LEARN = "auto_learn"
-        private const val DEFAULT_GRACE_MS = 30_000L
-    }
-
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences("dontleaveme", Context.MODE_PRIVATE)
 
     private val bluetoothAdapter by lazy {
         (context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
@@ -28,29 +18,24 @@ class BluetoothDeviceManager(private val context: Context) {
         emptySet()
     }
 
-    fun getWatchedAddresses(): Set<String> =
-        prefs.getStringSet(KEY_WATCHED, emptySet()) ?: emptySet()
+    fun isWatched(device: BluetoothDevice): Boolean = device.address in getWatchedAddresses()
 
-    fun isWatched(device: BluetoothDevice): Boolean =
-        device.address in getWatchedAddresses()
+    fun getWatchedAddresses(): Set<String> = prefs.getStringSet("watched", emptySet()) ?: emptySet()
 
     fun setWatched(address: String, watched: Boolean) {
         val current = getWatchedAddresses().toMutableSet()
         if (watched) current.add(address) else current.remove(address)
-        prefs.edit().putStringSet(KEY_WATCHED, current).apply()
+        prefs.edit().putStringSet("watched", current).apply()
     }
 
-    fun addWatchedDevice(device: BluetoothDevice) = setWatched(device.address, true)
+    // v2: used by WatchdogService for auto-learn on disconnect
+    // fun addWatchedDevice(device: BluetoothDevice) = setWatched(device.address, true)
 
-    fun getGracePeriodMs(): Long = prefs.getLong(KEY_GRACE_MS, DEFAULT_GRACE_MS)
+    // v2: grace period slider (10–120 s) stored here, read by WatchdogService.startGracePeriod()
+    // fun getGracePeriodMs(): Long = prefs.getLong("grace_ms", 30_000L)
+    // fun setGracePeriodMs(ms: Long) { prefs.edit().putLong("grace_ms", ms).apply() }
 
-    fun setGracePeriodMs(ms: Long) {
-        prefs.edit().putLong(KEY_GRACE_MS, ms).apply()
-    }
-
-    fun isAutoLearnEnabled(): Boolean = prefs.getBoolean(KEY_AUTO_LEARN, false)
-
-    fun setAutoLearn(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_AUTO_LEARN, enabled).apply()
-    }
+    // v2: auto-learn toggle — automatically watch any device that disconnects
+    // fun isAutoLearnEnabled(): Boolean = prefs.getBoolean("auto_learn", false)
+    // fun setAutoLearn(enabled: Boolean) { prefs.edit().putBoolean("auto_learn", enabled).apply() }
 }

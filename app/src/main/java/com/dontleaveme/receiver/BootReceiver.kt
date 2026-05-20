@@ -1,3 +1,6 @@
+// v2 — uncomment the <receiver> block in AndroidManifest.xml to activate.
+// Restarts WatchdogService after a device reboot or app update.
+
 package com.dontleaveme.receiver
 
 import android.content.BroadcastReceiver

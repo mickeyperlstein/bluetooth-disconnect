@@ -1,3 +1,11 @@
+// v2 — wire up in WatchdogService once MVP is validated.
+// Replace MediaPlayer alarm with this TTS personality engine.
+// Steps to activate:
+//   1. Add `private lateinit var personality: PhonePersonality` to WatchdogService
+//   2. Init in onCreate: `personality = PhonePersonality(this)`
+//   3. Call personality.speak(currentStage) / .greetReturn() / .greetFalseAlarm() / .silence()
+//   4. Register SensorManager + escalation handler (see commented blocks in WatchdogService)
+
 package com.dontleaveme.audio
 
 import android.content.Context
@@ -152,8 +160,6 @@ class PhonePersonality(private val context: Context) : TextToSpeech.OnInitListen
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    // STREAM_ALARM bypasses silent mode and routes to all active outputs
-    // (speaker + BT simultaneously), which is exactly what we want.
     private fun maxAlarmVolume() {
         val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
         audioManager.setStreamVolume(AudioManager.STREAM_ALARM, max, 0)
